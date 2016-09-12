@@ -6,6 +6,33 @@
 # @Version : $Id$
 
 import threading
+import logging
+
+logging.basicConfig(level=logging.DEBUG,
+                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                datefmt='%a, %d %b %Y %H:%M:%S',
+                filename='myapp.log',
+                filemode='w')
+
+def create_engine(user, password, database, host, port, **kw):
+    """
+    db模型的核心函数，用于连接数据库，生成全局对象engine
+    engine对象持有数据库连接
+    """
+    import pymysql
+    global engine
+    if engine is not None:
+        raise DBError('Engine is already initialized')
+    params = dict(user=user, password=password, database=database, host=host, port=port)
+    defaults = dict(use_unicode=True, charset='utf8', collation='utf8_general_ci', autocommit=False)
+    for k,v in defaults.iteritems():
+        params[k] = kw.pop(k, v)
+    params.update(kw)
+    params['bufferd'] = True
+    engine = _Engine(lambda:pymysql.connect(**params))
+    logging.info('Init mysql engine <%s> ok.' % hex(id(engine)))
+
+
 #数据库引擎对象
 class _Engine(object):
     def __init__(self, connect):
